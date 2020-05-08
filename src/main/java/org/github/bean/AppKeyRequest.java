@@ -14,29 +14,22 @@
  * limitations under the License.
  */
 package org.github.bean;
+
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 
 /**
+ * appkey请求
+ *
  * @author zhangmingyang
- * @Date: 2020/5/6
+ * @Date: 2020/5/8
  * @company Dingxuan
  */
-public class CryptoRequestParam {
-    /**
-     * 请求ID,唯一标识
-     */
+public class AppKeyRequest {
     @JSONField(name = "request_id")
     private int requestId;
-    /**
-     * 请求类型
-     */
-    @JSONField(name = "request_type")
-    private int requestType;
-    /**
-     * 请求数据
-     */
-    @JSONField(name = "request_data")
-    private String requsetData;
+    @JSONField(name = "app_name")
+    private String appName;
 
     public int getRequestId() {
         return requestId;
@@ -46,21 +39,18 @@ public class CryptoRequestParam {
         this.requestId = requestId;
     }
 
-    public int getRequestType() {
-        return requestType;
+    public String getAppName() {
+        return appName;
     }
 
-    public void setRequestType(int requestType) {
-        this.requestType = requestType;
+    public void setAppName(String appName) {
+        this.appName = appName;
     }
 
-    public String getRequsetData() {
-        return requsetData;
+    public static void main(String[] args) {
+        AppKeyRequest appRequestParam = new AppKeyRequest();
+        appRequestParam.setRequestId(12334324);
+        appRequestParam.setAppName("test1");
+        System.out.println(JSON.toJSONString(appRequestParam));
     }
-
-    public void setRequsetData(String requsetData) {
-        this.requsetData = requsetData;
-    }
-
-
 }

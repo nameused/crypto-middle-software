@@ -15,6 +15,7 @@
  */
 package org.github.client;
 
+import com.alibaba.fastjson.JSON;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -87,7 +88,7 @@ public class CryptoClient {
         }
     }
 
-    public CryptoResponse send(CryptoRequestParam cryptoRequestParam) throws Exception {
+    public CryptoResponse send(String cryptoRequestParam) throws Exception {
         ChannelPromise promise = clientHandler.sendMessage(cryptoRequestParam);
         promise.await(3, TimeUnit.SECONDS);
         return clientHandler.getResponse();
@@ -99,7 +100,7 @@ public class CryptoClient {
         cryptoRequestParam.setRequestId(001);
         cryptoRequestParam.setRequestType(100);
         cryptoRequestParam.setRequsetData("123");
-        CryptoResponse aaa = new CryptoClient("127.0.0.1", 8888).send(cryptoRequestParam);
+        CryptoResponse aaa = new CryptoClient("127.0.0.1", 8888).send(JSON.toJSONString(cryptoRequestParam));
         System.out.println(aaa.getCode());
     }
 }

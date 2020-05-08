@@ -16,10 +16,13 @@
 package org.github.socket;
 
 import com.alibaba.fastjson.JSON;
+import org.github.bean.CryptoRequest;
 import org.github.bean.CryptoRequestParam;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author zhangmingyang
@@ -38,7 +41,7 @@ public class Client {
         this.socket = new Socket(ip, port);
     }
 
-    private void send(String jsonObject) {
+    public void send(String jsonObject) {
         while (true) {
             try {
                 InputStream inputStream = socket.getInputStream();
@@ -75,17 +78,24 @@ public class Client {
                 }
             }
         }
-
-
     }
 
     public static void main(String[] args) throws IOException {
         Client client = new Client("localhost", 9998);
-        CryptoRequestParam cryptoRequestParam = new CryptoRequestParam();
-        cryptoRequestParam.setRequestId(001);
-        cryptoRequestParam.setRequestType(100);
-        cryptoRequestParam.setRequsetData("123");
-        client.send(JSON.toJSONString(cryptoRequestParam));
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        cryptoRequest.setRequestId("12323432");
+        cryptoRequest.setMessageType("cryptoRequest");
+        Map<String, String> headerMap = new HashMap<String, String>();
+        Map<String, String> bodyMap = new HashMap<String, String>();
+        headerMap.put("sign_factor", "sm2_sign");
+        headerMap.put("signed_data", "23432445");
+        bodyMap.put("invoke_type", "sm3_hash");
+        bodyMap.put("data", "fjikwer");
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        String json = JSON.toJSONString(cryptoRequest);
+        client.send(JSON.toJSONString(cryptoRequest));
     }
+
 
 }

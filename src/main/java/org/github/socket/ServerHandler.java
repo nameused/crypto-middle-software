@@ -18,6 +18,7 @@ package org.github.socket;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.github.bean.CryptoResponse;
+import org.github.process.ProcessData;
 
 import java.io.*;
 import java.net.Socket;
@@ -56,17 +57,7 @@ public class ServerHandler implements Runnable {
             baos.close();
 
             //处理数据并写入
-
-            JSONObject jsonObject = JSON.parseObject(strInputstream);
-            int request_id = Integer.valueOf(jsonObject.getString("request_id"));
-            String result = null;
-            if (request_id == 1) {
-                CryptoResponse cryptoResponse = new CryptoResponse();
-                cryptoResponse.setCode(200);
-                cryptoResponse.setData("result");
-                result = JSON.toJSONString(cryptoResponse);
-            }
-
+            String result = ProcessData.process(strInputstream);
             outputStream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             outputStream.writeUTF(result);
             outputStream.flush();

@@ -85,7 +85,8 @@ public class CryptoServerHandler extends ChannelInboundHandlerAdapter {
 //        ByteBuf buf = (ByteBuf) msg;
 //        String rev = getMessage(buf);
 //        log.info("服务端收到客户端的数据:" + rev);
-        CryptoRequestParam cryptoRequestParam = (CryptoRequestParam) msg;
+        String jsonObject= (String) msg;
+        CryptoRequestParam cryptoRequestParam = JSON.parseObject(jsonObject, CryptoRequestParam.class);
         String requestParam = JSON.toJSONString(cryptoRequestParam);
         log.info("服务端接收到的请求参数:" + requestParam);
         CryptoResponse cryptoResponse = new CryptoResponse();
@@ -93,7 +94,8 @@ public class CryptoServerHandler extends ChannelInboundHandlerAdapter {
             cryptoResponse.setCode(200);
             cryptoResponse.setData("resutlt");
         }
-        ctx.writeAndFlush(cryptoResponse).addListener(ChannelFutureListener.CLOSE);
+        String testdata = JSON.toJSONString(cryptoResponse);
+        ctx.writeAndFlush(testdata).addListener(ChannelFutureListener.CLOSE);
     }
 
     /**
