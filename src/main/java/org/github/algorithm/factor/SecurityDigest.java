@@ -13,12 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.github.algorithm.impl.gm;
+package org.github.algorithm.factor;
 
 /**
  * @author zhangmingyang
- * @Date: 2020/4/27
+ * @Date: 2020/5/13
  * @company Dingxuan
  */
-public class SM2 {
+public class SecurityDigest {
+
+    /**
+     * 通过安全因子与原文
+     *
+     * @param factor
+     * @param text
+     * @return
+     */
+    public byte[] init(byte[] factor, byte[] text) {
+        return null;
+    }
+
+    public byte[] hamc(byte[] message, byte[] key) {
+        return null;
+    }
 }

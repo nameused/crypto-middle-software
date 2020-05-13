@@ -13,12 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.github.algorithm.impl.gm;
+package org.github.common.exception;
 
 /**
  * @author zhangmingyang
- * @Date: 2020/4/27
+ * @Date: 2020/1/2
  * @company Dingxuan
  */
-public class SM4 {
+public class CertException extends CryptoException{
+    private static final String MODULE_NAME="[Cert]";
+    public CertException() {
+    }
+
+    public CertException(String message) {
+        super(MODULE_NAME+message);
+    }
+
+    public CertException(String message, Throwable cause) {
+        super(MODULE_NAME+message, cause);
+    }
+
+    public CertException(Throwable cause) {
+        super(cause);
+    }
+
+    public CertException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(MODULE_NAME+message, cause, enableSuppression, writableStackTrace);
+    }
 }

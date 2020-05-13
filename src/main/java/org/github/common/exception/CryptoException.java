@@ -1,5 +1,5 @@
 /**
- * Copyright DingXuan. All Rights Reserved.
+ * Copyright Dingxuan. All Rights Reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.github.common;
+
+package org.github.common.exception;
 
 /**
- * @author zhangmingyang
- * @Date: 2020/4/27
- * @company Dingxuan
+ * @Author: zhangmingyang
+ * @Date: 2019/10/25
+ * @Company Dingxuan
  */
-public class CryptoException extends Exception{
+public class CryptoException extends Exception {
     public CryptoException(){
         super();
     }

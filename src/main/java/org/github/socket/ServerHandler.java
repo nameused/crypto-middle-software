@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 package org.github.socket;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import org.github.bean.CryptoResponse;
+import org.apache.log4j.Logger;
 import org.github.process.ProcessData;
-
 import java.io.*;
 import java.net.Socket;
 
@@ -29,6 +25,8 @@ import java.net.Socket;
  * @company Dingxuan
  */
 public class ServerHandler implements Runnable {
+    private static final Logger log = Logger.getLogger(ServerHandler.class);
+
     private Socket socket;
 
     public ServerHandler(Socket client) {
@@ -38,7 +36,7 @@ public class ServerHandler implements Runnable {
 
     public void run() {
         //读取客户端发送来的消息
-        System.out.println("客户端数据已经连接");
+        log.info("客户端数据已经连接");
         DataInputStream inputStream = null;
         DataOutputStream outputStream = null;
         String strInputstream = "";
@@ -52,7 +50,7 @@ public class ServerHandler implements Runnable {
             }
             //获取客户端发送数据
             strInputstream = new String(baos.toByteArray());
-            System.out.println(strInputstream);
+            log.info("接收到客户端数据:"+strInputstream);
             socket.shutdownInput();
             baos.close();
 

@@ -13,12 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.github.algorithm.impl;
+package org.github.algorithm.gm;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import java.security.Security;
 
 /**
  * @author zhangmingyang
- * @Date: 2020/4/27
+ * @Date: 2020/5/13
  * @company Dingxuan
  */
-public class a {
+public class GmBase {
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 }

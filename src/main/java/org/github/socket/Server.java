@@ -16,6 +16,8 @@
 package org.github.socket;
 
 
+import org.apache.log4j.Logger;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -25,12 +27,13 @@ import java.net.Socket;
  * @company Dingxuan
  */
 public class Server {
-
+    private static final Logger log = Logger.getLogger(Server.class);
     private int port;
 
     public Server(int port) {
         this.port = port;
     }
+
     public void init() {
         try {
             ServerSocket serverSocket = new ServerSocket(port);
@@ -41,13 +44,15 @@ public class Server {
                 new ServerHandler(client);
             }
         } catch (Exception e) {
-            System.out.println("服务器异常: " + e.getMessage());
+            log.error("服务器异常: " + e.getMessage());
         }
     }
 
 
-        public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         Server server = new Server(9998);
+        log.info("密码服务启动中.....");
         server.init();
+
     }
 }
