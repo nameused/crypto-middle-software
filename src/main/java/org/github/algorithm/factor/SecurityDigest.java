@@ -15,25 +15,141 @@
  */
 package org.github.algorithm.factor;
 
+import org.apache.log4j.Logger;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
+import org.github.algorithm.gm.SM3;
+import org.github.algorithm.gm.SM4;
+import org.github.common.exception.EncryptException;
+import org.github.common.exception.HashException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
 /**
+ * 安全摘要实现
+ *
  * @author zhangmingyang
  * @Date: 2020/5/13
  * @company Dingxuan
  */
 public class SecurityDigest {
+    private static final Logger log = Logger.getLogger(SecurityDigest.class);
 
     /**
-     * 通过安全因子与原文
+     * 根据appCode生成appKey
      *
-     * @param factor
-     * @param text
      * @return
      */
-    public byte[] init(byte[] factor, byte[] text) {
-        return null;
+    public byte[] genAppkey(String appCode) throws EncryptException {
+        KeyGenerator keyGenerator = null;
+        try {
+            keyGenerator = KeyGenerator.getInstance("SM4", new BouncyCastleProvider());
+        } catch (NoSuchAlgorithmException e) {
+            log.error(e.getMessage());
+            throw new EncryptException(e.getMessage(), e);
+        }
+        keyGenerator.init(128, new SecureRandom(appCode.getBytes()));
+        SecretKey secretKey = keyGenerator.generateKey();
+        return secretKey.getEncoded();
     }
 
-    public byte[] hamc(byte[] message, byte[] key) {
-        return null;
+    /**
+     * 通过签名因子生成Ks
+     *
+     * @param signFactor
+     * @param appKey
+     * @return
+     */
+    public byte[] genKeyS(byte[] signFactor, byte[] appKey) throws Exception {
+        byte[] paddingFactor = paddingFactor(signFactor);
+        SM4 sm4 = new SM4();
+        byte[] keyS = sm4.encrypt("SM4/ECB/PKCS5Padding", appKey, null, paddingFactor);
+        return keyS;
+    }
+
+    /**
+     * 通过keyS与原数据进行
+     * sm3的hash计算得出摘要值
+     *
+     * @param message
+     * @param keyS
+     * @return
+     */
+    public byte[] hamc(byte[] keyS, byte[] message) throws HashException {
+        byte[] finalMessage = toByteArray(keyS, message);
+        SM3 sm3 = new SM3();
+        byte[] hmac = sm3.hash(finalMessage);
+        return hmac;
+    }
+
+    /**
+     * 计算Ks :=SM4(APPKEY)[Y||(Y⊕(‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’))]
+     * 获取SM4实例时，字符串拼接模式有：PKCS5Padding和NOPadding
+     * SM4初始化时1是加密，0是解密
+     *
+     * @param signFactor
+     * @return 计算得到[Y||(Y⊕(‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’||‘FF’))]的值
+     */
+    public byte[] paddingFactor(byte[] signFactor) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] byteXor;
+        try {
+            byteXor = xor(signFactor, Hex.decode("FFFFFFFFFFFFFFFF"));
+            baos.write(byteXor);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return baos.toByteArray();
+    }
+
+    /**
+     * 异或运算
+     *
+     * @param signFactor
+     * @param paddingByte
+     * @return
+     */
+    private static byte[] xor(byte[] signFactor, byte[] paddingByte) {
+        int byteLen = signFactor.length;
+        byte[] result = new byte[byteLen];
+
+        for (int i = 0; i < byteLen; i++) {
+            result[i] = (byte) (signFactor[i] ^ paddingByte[i]);
+        }
+        return result;
+    }
+
+    /**
+     * 数组拼接
+     *
+     * @param b1
+     * @param b2
+     * @return
+     */
+    private static byte[] toByteArray(byte[] b1, byte[] b2) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            baos.write(b1);
+            baos.write(b2);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return baos.toByteArray();
+    }
+
+
+    public static void main(String[] args) throws EncryptException {
+        SecurityDigest securityDigest = new SecurityDigest();
+        byte[] tests = securityDigest.genAppkey("Test");
+        System.out.println(Hex.toHexString(tests));
+        SM4 sm4 = new SM4();
+        byte[] enc = sm4.encrypt("SM4/ECB/PKCS5Padding", tests, null, "23432".getBytes());
+        System.out.println(Hex.toHexString(enc));
     }
 }

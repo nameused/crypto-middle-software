@@ -43,7 +43,4 @@ public class SM3 extends GmBase {
         messageDigest.update(data);
         return messageDigest.digest();
     }
-
-
-
 }

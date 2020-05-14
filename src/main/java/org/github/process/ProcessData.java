@@ -27,6 +27,8 @@ import org.github.bean.CryptoResponse;
 import org.github.common.exception.EncryptException;
 import org.github.common.exception.HashException;
 import org.github.common.exception.SignException;
+import org.github.config.CryptoConfig;
+import org.github.config.CryptoConfigFactory;
 import org.junit.Test;
 
 import static org.github.common.utils.GmUtil.byteArrayToPrivateKey;
@@ -41,13 +43,14 @@ import static org.github.common.utils.GmUtil.byteArrayToPublickey;
  */
 public class ProcessData {
     private static final Logger log = Logger.getLogger(ProcessData.class);
-    private final static String APPKEY_REQUEST = "appkeyRequst";
+    private final static String APPKEY_REQUEST = "appKeyRequest";
     private final static String CRYPTO_REQUEST = "cryptoRequest";
     private final static String SM3_HASH = "sm3_hash";
     private final static String SM2_SIGN = "sm2_sign";
     private final static String SM2_VERIFY = "sm2_verify";
     private final static String SM4_ENCRYPT = "sm4_encrypt";
     private final static String SM4_DECRYPT = "sm4_decrypt";
+    private final static String PUBLICKEY_REQUEST = "publicKeyRequest";
 
 
     /**
@@ -60,12 +63,13 @@ public class ProcessData {
         String result = null;
         JSONObject jsonObject = JSON.parseObject(strInputstream);
         String messageType = jsonObject.getString("message_type");
+        CryptoResponse cryptoResponse = new CryptoResponse();
         //加密请求
         if (CRYPTO_REQUEST.equals(messageType)) {
             String requestBody = jsonObject.getString("request_body");
             String invokeType = JSON.parseObject(requestBody).getString("invoke_type");
             String data = JSON.parseObject(requestBody).getString("data");
-            CryptoResponse cryptoResponse = new CryptoResponse();
+
             SM2 sm2 = new SM2();
             SM4 sm4 = new SM4();
             switch (invokeType) {
@@ -151,8 +155,13 @@ public class ProcessData {
             }
 
         }
-        //appkey请求
-        else if (APPKEY_REQUEST.equals(messageType)) {
+        //客户端请求服务端私钥
+        else if (PUBLICKEY_REQUEST.equals(messageType)) {
+            String serverPublickey = CryptoConfigFactory.getCryptoConfig().getServer().get("publicKey");
+            cryptoResponse.setCode(200);
+            cryptoResponse.setData(serverPublickey);
+            result = JSON.toJSONString(cryptoResponse);
+        } else if (APPKEY_REQUEST.equals(messageType)) {
 
         }
         return result;
@@ -161,13 +170,9 @@ public class ProcessData {
 
     @Test
     public void test() throws HashException, EncryptException {
-        SM3 sm3 = new SM3();
-        byte[] sm3Valu = sm3.hash("123".getBytes());
-        //System.out.println(Hex.toHexString(sm3Valu));
-        // log.info("sm3签名值:"+sm3Valu);
         SM4 sm4 = new SM4();
         System.out.println(Hex.toHexString(Hex.decode("b4e6b84eebb69cfad6e4e306cc371dad")));
-        System.out.println("密钥长度："+Hex.decode("3765613632373332303639653163303332646630623364636462363133366362").length);
+        System.out.println("密钥长度：" + Hex.decode("7ea62732069e1c03").length);
         byte[] encryData = sm4.encrypt("SM4/ECB/PKCS5Padding", "7ea62732069e1c03".getBytes(), null, "12344".getBytes());
         log.info("sm4加密结果:" + Hex.toHexString(encryData));
     }

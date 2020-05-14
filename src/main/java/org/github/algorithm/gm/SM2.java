@@ -30,7 +30,6 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveGenParameterSpec;
 import org.github.common.exception.SignException;
-
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -72,8 +71,6 @@ public class SM2 extends GmBase {
             KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
             PrivateKey priKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
             signature = Signature.getInstance(signatureAlgorithm);
-            //固定随机数,方便国密测试
-            //signature.initSign(priKey,new SecureRandom(Hex.decode("2C0FFDB039CCB57FFBFF75F821C42AFAC1DFCE4315547DF71DD60E6EDB4A4935")));
             signature.initSign(priKey);
             signature.update(data);
             signValue = signature.sign();
@@ -114,7 +111,6 @@ public class SM2 extends GmBase {
         BCECPublicKey localECPublicKey = (BCECPublicKey) publicKey;
         ECPublicKeyParameters ecPublicKeyParameters = new ECPublicKeyParameters(localECPublicKey.getQ(), ecDomainParameters);
         SM2Engine sm2Engine = new SM2Engine();
-        //sm2Engine.init(true, new ParametersWithRandom(ecPublicKeyParameters, new SecureRandom(Hex.decode("2C0FFDB039CCB57FFBFF75F821C42AFAC1DFCE4315547DF71DD60E6EDB4A4935"))));
         sm2Engine.init(true, new ParametersWithRandom(ecPublicKeyParameters));
         try {
             return sm2Engine.processBlock(data, 0, data.length);

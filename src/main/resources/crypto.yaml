@@ -1,0 +1,6 @@
+server:
+    privateKey: MIGTAgEAMBMGByqGSM49AgEGCCqBHM9VAYItBHkwdwIBAQQgWDA1rfxBlrauWMqI6pQN/1qdBHJO+psjSXLoPFD0F4qgCgYIKoEcz1UBgi2hRANCAASXj8aXaus2ogMQY5cbJ/f23azpSrTQZsoQyBAEmvjP6upLe/uwtqzySOlTGcrf7TP/zVU7VvlJlpnR4WB5b/vW
+    publicKey: MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEl4/Gl2rrNqIDEGOXGyf39t2s6Uq00GbKEMgQBJr4z+rqS3v7sLas8kjpUxnK3+0z/81VO1b5SZaZ0eFgeW/71g==
+client:
+    maxConut: 20
+    appKeyPath: D:\crypto\appkey

@@ -1,4 +1,4 @@
-package org.github; /**
+/**
  * Copyright DingXuan. All Rights Reserved.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +13,33 @@ package org.github; /**
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.github.config;
 
-
-import org.apache.log4j.Logger;
-import org.github.socket.Server;
+import java.util.Map;
 
 /**
  * @author zhangmingyang
- * @Date: 2020/4/27
+ * @Date: 2020/5/14
  * @company Dingxuan
  */
-public class Main {
-    private static final Logger log = Logger.getLogger(Main.class);
-    public static void main(String[] args) {
-        Server server = new Server(9998);
-        log.info("密码服务启动中.....");
-        server.init();
+public class CryptoConfig {
+    public final static String CRYPTO_CONFIG_PATH = "crypto.yaml";
+    private Map<String,String> server;
+    private Map<String,String> client;
+
+    public Map<String, String> getServer() {
+        return server;
+    }
+
+    public void setServer(Map<String, String> server) {
+        this.server = server;
+    }
+
+    public Map<String, String> getClient() {
+        return client;
+    }
+
+    public void setClient(Map<String, String> client) {
+        this.client = client;
     }
 }

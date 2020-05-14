@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
-
 /**
  * 报文发送测试类
  *
@@ -119,6 +117,15 @@ public class ClientTest {
         client.send(JSON.toJSONString(cryptoRequest));
     }
 
-
+    /**
+     * 向服务端发送公钥请求
+     */
+    @Test
+    public void serverPublickeyRequestTest() {
+        Map<String, String> map = new HashMap();
+        map.put("message_type","publicKeyRequest");
+        String publickeyJson=JSON.toJSONString(map);
+        client.send(publickeyJson);
+    }
 
 }

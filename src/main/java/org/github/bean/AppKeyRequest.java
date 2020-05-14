@@ -28,7 +28,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 public class AppKeyRequest {
     @JSONField(name = "request_id")
     private int requestId;
-    @JSONField(name = "app_name")
+    @JSONField(name = "app_code")
     private String appName;
 
     public int getRequestId() {
