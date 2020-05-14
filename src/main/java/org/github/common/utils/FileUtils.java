@@ -90,7 +90,7 @@ public class FileUtils {
 
     public static void main(String[] args) throws SignException, IOException {
         SM2 sm2 = new SM2();
-        KeyPair keyPair = sm2.genKeyPair(0);
+        KeyPair keyPair = sm2.genKeyPair();
         System.out.println(Base64.toBase64String(keyPair.getPrivate().getEncoded()));
         genAppKeyFile("D:/crypto/appkey/", "app1", keyPair.getPrivate().getEncoded());
     }

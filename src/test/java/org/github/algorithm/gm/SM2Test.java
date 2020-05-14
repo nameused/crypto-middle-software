@@ -24,7 +24,7 @@ public class SM2Test {
 
     @Test
     public void genKeyPair() throws SignException {
-        KeyPair keyPair = sm2.genKeyPair(0);
+        KeyPair keyPair = sm2.genKeyPair();
         System.out.println("privateKey:" + Base64.toBase64String(keyPair.getPrivate().getEncoded()));
         System.out.println("publicKey:" + Base64.toBase64String(keyPair.getPublic().getEncoded()));
     }

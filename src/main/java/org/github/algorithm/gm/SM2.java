@@ -30,6 +30,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveGenParameterSpec;
 import org.github.common.exception.SignException;
+
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -49,7 +50,7 @@ public class SM2 extends GmBase {
     private static X9ECParameters x9ECParameters = GMNamedCurves.getByName(KEY_GEN_PARAMETER);
     private static ECDomainParameters ecDomainParameters = new ECDomainParameters(x9ECParameters.getCurve(), x9ECParameters.getG(), x9ECParameters.getN());
 
-    public KeyPair genKeyPair(int keySize) throws SignException {
+    public KeyPair genKeyPair() throws SignException {
         KeyPairGenerator generator = null;
         try {
             Security.addProvider(new BouncyCastleProvider());
@@ -63,11 +64,11 @@ public class SM2 extends GmBase {
     }
 
 
-    public byte[] sign(byte[] data, PrivateKey privateKey, String signatureAlgorithm) throws SignException {
+    public byte[] sign(byte[] data, byte[] privateKey, String signatureAlgorithm) throws SignException {
         Signature signature;
         byte[] signValue;
         try {
-            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(privateKey.getEncoded());
+            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(privateKey);
             KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
             PrivateKey priKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
             signature = Signature.getInstance(signatureAlgorithm);
@@ -82,10 +83,10 @@ public class SM2 extends GmBase {
     }
 
 
-    public boolean verify(byte[] data, PublicKey publicKey, byte[] sign, String signatureAlgorithm) throws SignException {
+    public boolean verify(byte[] data, byte[] publicKey, byte[] sign, String signatureAlgorithm) throws SignException {
         boolean verify;
         try {
-            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKey.getEncoded());
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKey);
             KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
             PublicKey pubKey = keyFactory.generatePublic(keySpec);
             Signature signature = Signature.getInstance(signatureAlgorithm);
@@ -107,8 +108,20 @@ public class SM2 extends GmBase {
      * @param publicKey
      * @return
      */
-    public static byte[] sm2EncryptOld(byte[] data, PublicKey publicKey) {
-        BCECPublicKey localECPublicKey = (BCECPublicKey) publicKey;
+    public static byte[] sm2EncryptOld(byte[] data, byte[] publicKey) {
+
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKey);
+        KeyFactory keyFactory = null;
+        PublicKey pubKey = null;
+        try {
+            keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
+            pubKey = keyFactory.generatePublic(keySpec);
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+
+        BCECPublicKey localECPublicKey = (BCECPublicKey) pubKey;
         ECPublicKeyParameters ecPublicKeyParameters = new ECPublicKeyParameters(localECPublicKey.getQ(), ecDomainParameters);
         SM2Engine sm2Engine = new SM2Engine();
         sm2Engine.init(true, new ParametersWithRandom(ecPublicKeyParameters));
@@ -127,8 +140,18 @@ public class SM2 extends GmBase {
      * @param key
      * @return
      */
-    public static byte[] sm2DecryptOld(byte[] data, PrivateKey key) {
-        BCECPrivateKey localECPrivateKey = (BCECPrivateKey) key;
+    public static byte[] sm2DecryptOld(byte[] data, byte[] key) {
+        PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(key);
+        KeyFactory keyFactory = null;
+        PrivateKey priKey=null;
+        try {
+            keyFactory = KeyFactory.getInstance(KEY_ALGORITHM);
+            priKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+
+        BCECPrivateKey localECPrivateKey = (BCECPrivateKey) priKey;
         ECPrivateKeyParameters ecPrivateKeyParameters = new ECPrivateKeyParameters(localECPrivateKey.getD(), ecDomainParameters);
         SM2Engine sm2Engine = new SM2Engine();
         sm2Engine.init(false, ecPrivateKeyParameters);
@@ -187,7 +210,7 @@ public class SM2 extends GmBase {
      * @param key
      * @return
      */
-    public  byte[] decrypt(byte[] data, PrivateKey key) {
+    public byte[] decrypt(byte[] data, byte[] key) {
         return sm2DecryptOld(changeC1C3C2ToC1C2C3(data), key);
     }
 
@@ -199,7 +222,7 @@ public class SM2 extends GmBase {
      * @return
      */
 
-    public  byte[] encrypt(byte[] data, PublicKey key) {
+    public byte[] encrypt(byte[] data, byte[] key) {
         return changeC1C2C3ToC1C3C2(sm2EncryptOld(data, key));
     }
 

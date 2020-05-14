@@ -1,7 +1,11 @@
 package org.github.socket;
 
 import com.alibaba.fastjson.JSON;
+import org.bouncycastle.util.encoders.Base64;
+import org.github.algorithm.factor.SecurityDigest;
+import org.github.algorithm.gm.SM2;
 import org.github.bean.CryptoRequest;
+import org.github.common.exception.EncryptException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,7 +61,7 @@ public class ClientTest {
         headerMap.put("sign_factor", "sm2_sign");
         headerMap.put("signed_data", "23432445");
         bodyMap.put("invoke_type", "sm2_sign");
-        bodyMap.put("key", "0098a4dd5151a1630bfac2f8ed54bd6a18a5df68dbd4d9e591f4d872bd122c1bd0");
+        bodyMap.put("key", "MIGTAgEAMBMGByqGSM49AgEGCCqBHM9VAYItBHkwdwIBAQQgHF82vK5NK7UqTFy4wDawQJN4XczwWGq1KswbG+by94CgCgYIKoEcz1UBgi2hRANCAAQ0TGdM5zr2bUBFj6DrEBFWa4vjx8zMjdFYSiqAZ3NAYSXkE9N9kORAO5nohc6Cx2b7bSx7jDlMFonao5hwapFk");
         bodyMap.put("data", "123434");
         cryptoRequest.setRequestHeader(headerMap);
         cryptoRequest.setRequestBody(bodyMap);
@@ -74,9 +78,9 @@ public class ClientTest {
         headerMap.put("sign_factor", "sm2_verify");
         headerMap.put("signed_data", "23432445");
         bodyMap.put("invoke_type", "sm2_verify");
-        bodyMap.put("key", "04ef882fcfaacf9d202f6f49c795dc54bc795234d11da590bfac331e5df525bd9ea98d2ee7d46b6718ee6dd2c739dda68a4c3be613576e674730e05e925c5e4e77");
+        bodyMap.put("key", "MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAENExnTOc69m1ARY+g6xARVmuL48fMzI3RWEoqgGdzQGEl5BPTfZDkQDuZ6IXOgsdm+20se4w5TBaJ2qOYcGqRZA==");
         bodyMap.put("data", "123434");
-        bodyMap.put("sign_value", "MEUCIQCIR4GpIUir8Yr2FRIynQAG++t0S8PAT2o2nRtXZ0wSLwIgA22MS6rlfS11Brs8Pl/Z7A8qrYyrcr6vsq5lV68lnEU=");
+        bodyMap.put("sign_value", "MEUCIQCtSTKTBX24JOi2WFnUqGCv2fHf/ewaD0YM5aZp4UCRoQIgAcWDx9ypDoUN1vp3JzqqfX7AgxhwyA5kZfohbbWsLvo=");
         cryptoRequest.setRequestHeader(headerMap);
         cryptoRequest.setRequestBody(bodyMap);
         client.send(JSON.toJSONString(cryptoRequest));
@@ -123,9 +127,31 @@ public class ClientTest {
     @Test
     public void serverPublickeyRequestTest() {
         Map<String, String> map = new HashMap();
-        map.put("message_type","publicKeyRequest");
-        String publickeyJson=JSON.toJSONString(map);
+        map.put("message_type", "publicKeyRequest");
+        String publickeyJson = JSON.toJSONString(map);
         client.send(publickeyJson);
+    }
+
+    /**
+     * 利用服务端公钥加密
+     * 生成的appKey发送到服务端
+     */
+
+    @Test
+    public void appKeyRequestTest() throws EncryptException {
+        SecurityDigest securityDigest = new SecurityDigest();
+        byte[] appkey = securityDigest.genAppkey("office2");
+        byte[] sm2publicKey = Base64.decode("MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEl4/Gl2rrNqIDEGOXGyf39t2s6Uq00GbKEMgQBJr4z+rqS3v7sLas8kjpUxnK3+0z/81VO1b5SZaZ0eFgeW/71g==");
+        SM2 sm2 = new SM2();
+        byte[] encryptAppkey = sm2.encrypt(appkey, sm2publicKey);
+        System.out.println("公钥加密后的值："+Base64.toBase64String(encryptAppkey));
+        Map<String, String> map = new HashMap();
+        map.put("message_type", "appKeyRequest");
+        map.put("app_code", "office2");
+        map.put("app_key",Base64.toBase64String(encryptAppkey));
+        String appKeyRequestData=JSON.toJSONString(map);
+        System.out.println("发送的数据为："+appKeyRequestData);
+        client.send(appKeyRequestData);
     }
 
 }

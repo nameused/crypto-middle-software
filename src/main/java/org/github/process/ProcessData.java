@@ -27,9 +27,17 @@ import org.github.bean.CryptoResponse;
 import org.github.common.exception.EncryptException;
 import org.github.common.exception.HashException;
 import org.github.common.exception.SignException;
+import org.github.common.utils.FileUtils;
 import org.github.config.CryptoConfig;
 import org.github.config.CryptoConfigFactory;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.github.common.utils.GmUtil.byteArrayToPrivateKey;
 import static org.github.common.utils.GmUtil.byteArrayToPublickey;
@@ -64,21 +72,20 @@ public class ProcessData {
         JSONObject jsonObject = JSON.parseObject(strInputstream);
         String messageType = jsonObject.getString("message_type");
         CryptoResponse cryptoResponse = new CryptoResponse();
+        SM2 sm2 = new SM2();
+        SM4 sm4 = new SM4();
         //加密请求
         if (CRYPTO_REQUEST.equals(messageType)) {
             String requestBody = jsonObject.getString("request_body");
             String invokeType = JSON.parseObject(requestBody).getString("invoke_type");
             String data = JSON.parseObject(requestBody).getString("data");
-
-            SM2 sm2 = new SM2();
-            SM4 sm4 = new SM4();
             switch (invokeType) {
                 case SM2_SIGN:
                     String privateKey = JSON.parseObject(requestBody).getString("key");
-                    byte[] sk = Hex.decode(privateKey);
+                    byte[] sk = Base64.decode(privateKey);
                     byte[] signValue = null;
                     try {
-                        signValue = sm2.sign(data.getBytes(), byteArrayToPrivateKey(sk), "SM3WithSM2");
+                        signValue = sm2.sign(data.getBytes(), sk, "SM3WithSM2");
                     } catch (SignException e) {
                         cryptoResponse.setCode(500);
                         cryptoResponse.setData(e.getMessage());
@@ -93,10 +100,10 @@ public class ProcessData {
                 case SM2_VERIFY:
                     String publicKey = JSON.parseObject(requestBody).getString("key");
                     String signature = JSON.parseObject(requestBody).getString("sign_value");
-                    byte[] pk = Hex.decode(publicKey);
+                    byte[] pk = Base64.decode(publicKey);
                     boolean verify = false;
                     try {
-                        verify = sm2.verify(data.getBytes(), byteArrayToPublickey(pk), Base64.decode(signature), "SM3WithSM2");
+                        verify = sm2.verify(data.getBytes(), pk, Base64.decode(signature), "SM3WithSM2");
                         log.info("验证结果:" + verify);
                     } catch (SignException e) {
                         cryptoResponse.setCode(500);
@@ -162,7 +169,26 @@ public class ProcessData {
             cryptoResponse.setData(serverPublickey);
             result = JSON.toJSONString(cryptoResponse);
         } else if (APPKEY_REQUEST.equals(messageType)) {
-
+            String serverPrivateKey = CryptoConfigFactory.getCryptoConfig().getServer().get("privateKey");
+            String appKeyPath = CryptoConfigFactory.getCryptoConfig().getClient().get("appKeyPath");
+            String appCode = jsonObject.getString("app_code");
+            String encryptAppkey = jsonObject.getString("app_key");
+            byte[] appkey = sm2.decrypt(Base64.decode(encryptAppkey), Base64.decode(serverPrivateKey));
+            if (!new File(appKeyPath).exists()) {
+                try {
+                    Files.createDirectories(Paths.get(appKeyPath));
+                } catch (IOException e) {
+                    log.error("创建文件夹失败!");
+                }
+            }
+            try {
+                FileUtils.genAppKeyFile(appKeyPath, appCode, appkey);
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+            cryptoResponse.setCode(200);
+            cryptoResponse.setData("appkey写入成功!");
+            result = JSON.toJSONString(cryptoResponse);
         }
         return result;
     }
