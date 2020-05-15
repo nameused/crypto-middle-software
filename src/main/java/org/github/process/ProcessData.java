@@ -20,27 +20,25 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.log4j.Logger;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
+import org.github.algorithm.factor.SecurityDigest;
 import org.github.algorithm.gm.SM2;
 import org.github.algorithm.gm.SM3;
 import org.github.algorithm.gm.SM4;
+import org.github.bean.CryptoRequest;
 import org.github.bean.CryptoResponse;
 import org.github.common.exception.EncryptException;
 import org.github.common.exception.HashException;
 import org.github.common.exception.SignException;
 import org.github.common.utils.FileUtils;
-import org.github.config.CryptoConfig;
 import org.github.config.CryptoConfigFactory;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
-import static org.github.common.utils.GmUtil.byteArrayToPrivateKey;
-import static org.github.common.utils.GmUtil.byteArrayToPublickey;
 
 /**
  * 报文消息处理
@@ -73,10 +71,56 @@ public class ProcessData {
         String messageType = jsonObject.getString("message_type");
         CryptoResponse cryptoResponse = new CryptoResponse();
         SM2 sm2 = new SM2();
+        SM3 sm3 = new SM3();
         SM4 sm4 = new SM4();
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        SecurityDigest securityDigest = new SecurityDigest();
         //加密请求
         if (CRYPTO_REQUEST.equals(messageType)) {
+
+            //获取appkey验证签名
+            String requestHeader = jsonObject.getString("request_header");
+            String appCode = JSON.parseObject(requestHeader).getString("app_code");
             String requestBody = jsonObject.getString("request_body");
+            //加密后的数据
+            String bodyEncryptData = JSON.parseObject(requestBody).getString("body_encrypt_data");
+            if (!FileUtils.findFile(appCode)) {
+                cryptoResponse.setCode(500);
+                cryptoResponse.setData("非法的数据请求!");
+                throw new RuntimeException("非法的数据请求!");
+            }
+
+            byte[] appKey = Base64.decode(FileUtils.getAppKey(appCode));
+            byte[] signFactor = Base64.decode(JSON.parseObject(requestHeader).getString("sign_factor"));
+            byte[] hamcVaule = Base64.decode(JSON.parseObject(requestHeader).getString("hmac_value"));
+            boolean verifyResult = false;
+            try {
+                verifyResult = securityDigest.verify(signFactor, appKey, Base64.decode(bodyEncryptData), hamcVaule);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+            if (!verifyResult) {
+                cryptoResponse.setCode(500);
+                cryptoResponse.setData("数据验证不通过,数据存在被篡改风险!");
+                log.error("数据验证不通过,数据存在被篡改风险!");
+                result = JSON.toJSONString(cryptoResponse);
+                return result;
+            }
+            //通过appkey解析出新的requestBody内容
+            byte[] requestBodyContent = null;
+            try {
+                requestBodyContent = sm4.decrypt("SM4/ECB/PKCS5Padding", appKey, null, Base64.decode(bodyEncryptData));
+            } catch (EncryptException e) {
+                cryptoResponse.setCode(500);
+                cryptoResponse.setData("数据解密错误!");
+                log.error("数据解密错误!");
+            }
+
+            String requestBodyData = new String(requestBodyContent);
+            Map requestBodyMap = JSON.parseObject(requestBodyData, Map.class);
+            cryptoRequest.setRequestBody(requestBodyMap);
+            String requestBodyJson = JSON.toJSONString(cryptoRequest);
+            requestBody = JSON.parseObject(requestBodyJson).getString("request_body");
             String invokeType = JSON.parseObject(requestBody).getString("invoke_type");
             String data = JSON.parseObject(requestBody).getString("data");
             switch (invokeType) {
@@ -115,7 +159,6 @@ public class ProcessData {
                     result = JSON.toJSONString(cryptoResponse);
                     break;
                 case SM3_HASH:
-                    SM3 sm3 = new SM3();
                     byte[] hashValue = null;
                     try {
                         hashValue = sm3.hash(data.getBytes());
@@ -157,10 +200,9 @@ public class ProcessData {
                     result = JSON.toJSONString(cryptoResponse);
                     break;
                 default:
-                    log.error("不支持该消息类型!");
+                    log.error("不支持的消息类型!");
                     break;
             }
-
         }
         //客户端请求服务端私钥
         else if (PUBLICKEY_REQUEST.equals(messageType)) {
@@ -187,7 +229,7 @@ public class ProcessData {
                 log.error(e.getMessage());
             }
             cryptoResponse.setCode(200);
-            cryptoResponse.setData("appkey写入成功!");
+            cryptoResponse.setData("appkey写入到服务端成功!");
             result = JSON.toJSONString(cryptoResponse);
         }
         return result;

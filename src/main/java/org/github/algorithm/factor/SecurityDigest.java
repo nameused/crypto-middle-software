@@ -17,6 +17,7 @@ package org.github.algorithm.factor;
 
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 import org.github.algorithm.gm.SM3;
 import org.github.algorithm.gm.SM4;
@@ -28,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 /**
  * 安全摘要实现
@@ -38,6 +40,24 @@ import java.security.SecureRandom;
  */
 public class SecurityDigest {
     private static final Logger log = Logger.getLogger(SecurityDigest.class);
+
+    /**
+     * 生成8字节的签名因子
+     *
+     * @return
+     */
+    public byte[] genSignFactor() throws EncryptException {
+        KeyGenerator keyGenerator = null;
+        try {
+            keyGenerator = KeyGenerator.getInstance("SM4", new BouncyCastleProvider());
+        } catch (NoSuchAlgorithmException e) {
+            log.error(e.getMessage());
+            throw new EncryptException(e.getMessage(), e);
+        }
+        keyGenerator.init(64);
+        SecretKey secretKey = keyGenerator.generateKey();
+        return secretKey.getEncoded();
+    }
 
     /**
      * 根据appCode生成appKey
@@ -84,6 +104,25 @@ public class SecurityDigest {
         SM3 sm3 = new SM3();
         byte[] hmac = sm3.hash(finalMessage);
         return hmac;
+    }
+
+    /**
+     * 验证有效性
+     *
+     * @return
+     */
+    public boolean verify(byte[] signFactor, byte[] appKey, byte[] message, byte[] signValue) throws Exception {
+        System.out.println("客户端计算的签名值："+Base64.toBase64String(signValue));
+        System.out.println("签名因子："+Base64.toBase64String(signFactor));
+        System.out.println("数据："+Base64.toBase64String(message));
+        System.out.println("appKey:"+Base64.toBase64String(appKey));
+        byte[] hamc = hamc(genKeyS(signFactor, appKey), message);
+        log.info("计算出的签名值"+ Base64.toBase64String(hamc));
+        if (Arrays.equals(hamc, signValue)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -151,5 +190,6 @@ public class SecurityDigest {
         SM4 sm4 = new SM4();
         byte[] enc = sm4.encrypt("SM4/ECB/PKCS5Padding", tests, null, "23432".getBytes());
         System.out.println(Hex.toHexString(enc));
+        System.out.println(securityDigest.genSignFactor().length);
     }
 }

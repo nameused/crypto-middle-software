@@ -17,13 +17,12 @@ package org.github.common.utils;
 
 
 import org.apache.log4j.Logger;
-import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
-import org.github.algorithm.gm.SM2;
 import org.github.common.exception.SignException;
+import org.github.config.CryptoConfigFactory;
 import java.io.*;
-import java.security.KeyPair;
+
 
 /**
  * 文件辅助类
@@ -43,8 +42,9 @@ public class FileUtils {
      * @param appCode
      * @return
      */
-    public boolean findFile(String appCode, String filePath) {
-        if (new File(filePath + appCode + SUFFIX).exists()) {
+    public static boolean findFile(String appCode) {
+        String appKeyPath = CryptoConfigFactory.getCryptoConfig().getClient().get("appKeyPath");
+        if (new File(appKeyPath + appCode + SUFFIX).exists()) {
             return true;
         }
         return false;
@@ -85,13 +85,32 @@ public class FileUtils {
      * @param appCode
      */
     public static String getAppKey(String appCode) {
-        return null;
+        String appKeyPath = CryptoConfigFactory.getCryptoConfig().getClient().get("appKeyPath");
+        File inFile = new File(appKeyPath + appCode + SUFFIX);
+        long fileLen = inFile.length();
+        Reader reader = null;
+        PemObject pemObject = null;
+        char[] content = null;
+        try {
+            reader = new FileReader(inFile);
+            content = new char[(int) fileLen];
+            reader.read(content);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String str = new String(content);
+        String privateKeyPEM = str.replace("-----BEGIN PRIVATE KEY-----\r", "")
+                .replace("-----END PRIVATE KEY-----\r", "").replace("\n","").replace("\r","");
+        return privateKeyPEM;
     }
 
     public static void main(String[] args) throws SignException, IOException {
-        SM2 sm2 = new SM2();
-        KeyPair keyPair = sm2.genKeyPair();
-        System.out.println(Base64.toBase64String(keyPair.getPrivate().getEncoded()));
-        genAppKeyFile("D:/crypto/appkey/", "app1", keyPair.getPrivate().getEncoded());
+//        SM2 sm2 = new SM2();
+//        KeyPair keyPair = sm2.genKeyPair();
+//        System.out.println(Base64.toBase64String(keyPair.getPrivate().getEncoded()));
+//        genAppKeyFile("D:/crypto/appkey/", "app1", keyPair.getPrivate().getEncoded());
+        String a = getAppKey("office2");
+        System.out.println(a);
+
     }
 }

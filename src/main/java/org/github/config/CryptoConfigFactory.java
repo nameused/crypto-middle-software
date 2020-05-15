@@ -51,7 +51,6 @@ public class CryptoConfigFactory {
         CryptoConfig cryptoConfig = null;
         try {
             String name = CryptoConfigFactory.class.getClassLoader().getResource(CryptoConfig.CRYPTO_CONFIG_PATH).getFile();
-            System.out.println(name);
             is = new FileInputStream(name);
         } catch (FileNotFoundException e) {
             log.error(e.getMessage());
