@@ -3,23 +3,34 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.github</groupId>
+    <groupId>org.github</groupId>
     <artifactId>crypto-middle-software</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>7</source>
-                    <target>7</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <packaging>pom</packaging>
+    <version>0.1</version>
 
+    <modules>
+        <module>crypto-common</module>
+        <module>crypto-server</module>
+        <module>crypto-client</module>
+        <module>crypto-core</module>
+    </modules>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+
+    <distributionManagement>
+        <repository>
+            <id>dx-releases</id>
+            <url>http://119.145.24.76:8081/repository/dx-releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>dx-snapshots</id>
+            <url>http://119.145.24.76:8081/repository/dx-snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <dependencies>
         <dependency>
@@ -41,9 +52,6 @@
             <version>1.2.17</version>
         </dependency>
 
-
-
-
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
@@ -55,26 +63,24 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.6.Final</version>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.59</version>
+            <version>1.63</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bcia.julongchain</groupId>
-            <artifactId>messagedigest</artifactId>
-            <version>1.1</version>
         </dependency>
 
         <dependency>
@@ -82,15 +88,96 @@
             <artifactId>snakeyaml</artifactId>
             <version>1.23</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.github</groupId>-->
-            <!--<artifactId>crypto</artifactId>-->
-            <!--<version>0.1</version>-->
-            <!--<scope>system</scope>-->
-            <!--<systemPath>${project.basedir}/lib/crypto-0.1-jar-with-dependencies.jar</systemPath>-->
-            <!--&lt;!&ndash;<systemPath>${project.basedir}/lib/crypto-0.1.jar</systemPath>&ndash;&gt;-->
-        <!--</dependency>-->
 
     </dependencies>
+
+    <build>
+        <finalName>crypto-middle-software-${project.version}</finalName>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.5.0.Final</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <encoding>${project.build.sourceEncoding}</encoding>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <!-- ${project.build.directory}为Maven内置变量，缺省为target -->
+                            <outputDirectory>${project.build.directory}/classes/lib</outputDirectory>
+                            <!-- 表示是否不包含间接依赖的包 -->
+                            <excludeTransitive>false</excludeTransitive>
+                            <!-- 表示复制的jar文件去掉版本信息 -->
+                            <stripVersion>false</stripVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <!-- 告知 maven-jar-plugin添加一个 Class-Path元素到 MANIFEST.MF文件，以及在Class-Path元素中包括所有依赖项 -->
+                            <addClasspath>true</addClasspath>
+                            <!-- 所有的依赖项应该位于 lib文件夹 -->
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <!-- 当用户使用 lib命令执行JAR文件时，使用该元素定义将要执行的类名 -->
+                            <mainClass>org.github.Main</mainClass>
+                        </manifest>
+                    </archive>
+                    <excludes>lib/*</excludes>
+                </configuration>
+                <!--jar包排除lib防止多层引用导致的jar体积过大-->
+            </plugin>
+            <!-- maven-surefire-plugin -->
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.21.0</version>
+                <configuration>
+                    <skip>true</skip><!-- 跳过测试 -->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
