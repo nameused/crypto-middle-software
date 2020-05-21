@@ -37,7 +37,8 @@ public class CryptoClient {
         this.socket = new Socket(ip, port);
     }
 
-    public void send(String jsonObject) {
+    public String send(String jsonObject) {
+        String strInputstream = "";
         while (true) {
             try {
                 InputStream inputStream = socket.getInputStream();
@@ -51,10 +52,9 @@ public class CryptoClient {
                 socket.shutdownOutput();
                 //读取服务器返回的消息
                 DataInputStream dataInputStream = null;
-                String strInputstream = "";
                 dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
                 strInputstream = dataInputStream.readUTF();
-                log.info("服务端返回数据:"+strInputstream);
+                log.info("服务端返回数据:" + strInputstream);
                 if (strInputstream != null) {
                     log.info("客户端关闭连接");
                     Thread.sleep(500);
@@ -74,5 +74,6 @@ public class CryptoClient {
                 }
             }
         }
+        return strInputstream;
     }
 }
