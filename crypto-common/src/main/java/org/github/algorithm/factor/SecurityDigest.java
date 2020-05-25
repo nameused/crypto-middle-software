@@ -85,8 +85,13 @@ public class SecurityDigest extends GmBase {
      * @param appKey
      * @return
      */
-    public byte[] genKeyS(byte[] signFactor, byte[] appKey) throws Exception {
-        byte[] paddingFactor = paddingFactor(signFactor);
+    public byte[] genKeyS(byte[] signFactor, byte[] appKey) throws EncryptException {
+        byte[] paddingFactor = new byte[0];
+        try {
+            paddingFactor = paddingFactor(signFactor);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
         SM4 sm4 = new SM4();
         byte[] keyS = sm4.encrypt("SM4/ECB/PKCS5Padding", appKey, null, paddingFactor);
         return keyS;
