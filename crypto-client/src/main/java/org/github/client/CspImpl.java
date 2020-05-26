@@ -86,4 +86,75 @@ public class CspImpl {
         String symmetryKeyRequestMessage = requestHelper.buildSymmetryKeyRequestMessage(appKey, appCode);
         return cryptoClient.send(symmetryKeyRequestMessage);
     }
+
+    /**
+     * 获取非对称密钥对
+     *
+     * @param appKey
+     * @param appCode
+     * @return
+     */
+    public String getAsymmetricKey(String appKey, String appCode) {
+        String asymmetricKeyRequestMessage = requestHelper.buildAsymmetricKeyRequestMessage(appKey, appCode);
+        return cryptoClient.send(asymmetricKeyRequestMessage);
+    }
+
+    /**
+     * 签名实现
+     *
+     * @param appKey
+     * @param appCode
+     * @param privateKey
+     * @param data
+     * @return
+     */
+    public String sign(String appKey, String appCode, String privateKey, byte[] data) {
+        String signRequestMessage = requestHelper.buidSignRequestMessage(appKey, appCode, privateKey, data);
+        return cryptoClient.send(signRequestMessage);
+    }
+
+    /**
+     * 验证签名
+     *
+     * @param appKey
+     * @param appCode
+     * @param publicKey
+     * @param data
+     * @param signValue
+     * @return
+     */
+
+    public String verfiy(String appKey, String appCode, String publicKey, byte[] data, String signValue) {
+        String verifyRequestMessage = requestHelper.buildVerifyRequestMessage(appKey, appCode, publicKey, data, signValue);
+        return cryptoClient.send(verifyRequestMessage);
+    }
+
+    /**
+     * sm4加密
+     *
+     * @param appkey
+     * @param appCode
+     * @param sm4key
+     * @param data
+     * @return
+     */
+    public String encrypt(String appkey, String appCode, String sm4key, byte[] data) {
+        String encryptRequestMessage = requestHelper.buildEncryptRequestMessage(appkey, appCode, sm4key, data);
+        return cryptoClient.send(encryptRequestMessage);
+    }
+
+    /**
+     * sm4解密
+     *
+     * @param appkey
+     * @param appCode
+     * @param sm4key
+     * @param encryptData
+     * @return
+     */
+    public String decrypt(String appkey, String appCode, String sm4key, byte[] encryptData) {
+        String decryptRequestMessage = requestHelper.buildDecryptRequestMessage(appkey, appCode, sm4key, encryptData);
+        return cryptoClient.send(decryptRequestMessage);
+    }
+
 }

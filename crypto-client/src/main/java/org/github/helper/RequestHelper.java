@@ -20,7 +20,6 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.util.encoders.Base64;
 import org.github.algorithm.factor.SecurityDigest;
 import org.github.algorithm.gm.SM2;
-import org.github.algorithm.gm.SM3;
 import org.github.algorithm.gm.SM4;
 import org.github.bean.CryptoRequest;
 import org.github.common.exception.EncryptException;
@@ -39,7 +38,6 @@ import java.util.Map;
 public class RequestHelper {
     private static final Logger log = Logger.getLogger(RequestHelper.class);
     private SM2 sm2;
-    private SM3 sm3;
     private SM4 sm4;
     private SecurityDigest securityDigest;
     /**
@@ -51,7 +49,6 @@ public class RequestHelper {
     public RequestHelper() {
         this.securityDigest = new SecurityDigest();
         this.sm2 = new SM2();
-        sm3 = new SM3();
         sm4 = new SM4();
     }
 
@@ -122,7 +119,6 @@ public class RequestHelper {
         }
         bodyMap.clear();
         bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
-        System.out.println(JSON.toJSONString(bodyMap));
         //然后利用appkey进行sm3的hmac计算
         byte[] signFactorByte = new byte[0];
         byte[] keyS = null;
@@ -165,6 +161,8 @@ public class RequestHelper {
         String signFactor = null;
         try {
             bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
             signFactorByte = securityDigest.genSignFactor();
             signFactor = Base64.toBase64String(signFactorByte);
             keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
@@ -172,8 +170,222 @@ public class RequestHelper {
         } catch (EncryptException | HashException e) {
             e.printStackTrace();
         }
-        bodyMap.clear();
-        bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+        headerMap.put("sign_factor", signFactor);
+        headerMap.put("hmac_value", Base64.toBase64String(hmac));
+        headerMap.put("app_code", appCode);
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        return JSON.toJSONString(cryptoRequest);
+    }
+
+    /**
+     * 构建非对称密钥请求消息
+     *
+     * @param appKey
+     * @param appCode
+     * @return
+     */
+
+    public String buildAsymmetricKeyRequestMessage(String appKey, String appCode) {
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        Map headerMap = new HashMap<String, String>();
+        Map bodyMap = new HashMap<String, String>();
+        cryptoRequest.setRequestId("123456");
+        cryptoRequest.setMessageType("cryptoRequest");
+        bodyMap.put("invoke_type", "sm2_keypair_gen");
+        String bodyJson = JSON.toJSONString(bodyMap);
+        byte[] bodyByte = new byte[0];
+        byte[] signFactorByte = new byte[0];
+        byte[] keyS = null;
+        byte[] hmac = null;
+        String signFactor = null;
+        try {
+            bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+            signFactorByte = securityDigest.genSignFactor();
+            signFactor = Base64.toBase64String(signFactorByte);
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
+            hmac = securityDigest.hamc(keyS, bodyByte);
+        } catch (EncryptException | HashException e) {
+            e.printStackTrace();
+        }
+        headerMap.put("sign_factor", signFactor);
+        headerMap.put("hmac_value", Base64.toBase64String(hmac));
+        headerMap.put("app_code", appCode);
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        return JSON.toJSONString(cryptoRequest);
+    }
+
+
+    /**
+     * 构建签名请求消息
+     *
+     * @param appKey
+     * @param appCode
+     * @param privateKey
+     * @param data
+     * @return
+     */
+    public String buidSignRequestMessage(String appKey, String appCode, String privateKey, byte[] data) {
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        Map headerMap = new HashMap<String, String>();
+        Map bodyMap = new HashMap<String, String>();
+        cryptoRequest.setRequestId("123456");
+        cryptoRequest.setMessageType("cryptoRequest");
+        bodyMap.put("invoke_type", "sm2_sign");
+        bodyMap.put("key", privateKey);
+        bodyMap.put("data", Base64.toBase64String(data));
+        String bodyJson = JSON.toJSONString(bodyMap);
+        byte[] bodyByte = new byte[0];
+        byte[] signFactorByte = null;
+        byte[] keyS = null;
+        byte[] hmac = null;
+        String signFactor = null;
+        try {
+            bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+            signFactorByte = securityDigest.genSignFactor();
+            signFactor = Base64.toBase64String(signFactorByte);
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
+            hmac = securityDigest.hamc(keyS, bodyByte);
+        } catch (EncryptException | HashException e) {
+            e.printStackTrace();
+        }
+        headerMap.put("sign_factor", signFactor);
+        headerMap.put("hmac_value", Base64.toBase64String(hmac));
+        headerMap.put("app_code", appCode);
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        return JSON.toJSONString(cryptoRequest);
+    }
+
+    /**
+     * 构建签名验证请求消息
+     *
+     * @param appKey
+     * @param appCode
+     * @param publicKey
+     * @param data
+     * @param signValue
+     * @return
+     */
+
+    public String buildVerifyRequestMessage(String appKey, String appCode, String publicKey, byte[] data, String signValue) {
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        Map headerMap = new HashMap<String, String>();
+        Map bodyMap = new HashMap<String, String>();
+        cryptoRequest.setRequestId("123456");
+        cryptoRequest.setMessageType("cryptoRequest");
+        bodyMap.put("invoke_type", "sm2_verify");
+        bodyMap.put("sign_value", signValue);
+        bodyMap.put("key", publicKey);
+        bodyMap.put("data", data);
+        String bodyJson = JSON.toJSONString(bodyMap);
+        byte[] bodyByte = new byte[0];
+        byte[] signFactorByte = null;
+        byte[] keyS = null;
+        byte[] hmac = null;
+        String signFactor = null;
+        try {
+            bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+            signFactorByte = securityDigest.genSignFactor();
+            signFactor = Base64.toBase64String(signFactorByte);
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            hmac = securityDigest.hamc(keyS, bodyByte);
+        } catch (EncryptException | HashException e) {
+            e.printStackTrace();
+        }
+        headerMap.put("sign_factor", signFactor);
+        headerMap.put("hmac_value", Base64.toBase64String(hmac));
+        headerMap.put("app_code", appCode);
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        return JSON.toJSONString(cryptoRequest);
+    }
+
+    /**
+     * 构建加密请求消息
+     *
+     * @param appKey
+     * @param appCode
+     * @param sm4Key
+     * @param data
+     * @return
+     */
+    public String buildEncryptRequestMessage(String appKey, String appCode, String sm4Key, byte[] data) {
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        Map headerMap = new HashMap<String, String>();
+        Map bodyMap = new HashMap<String, String>();
+        cryptoRequest.setRequestId("123456");
+        cryptoRequest.setMessageType("cryptoRequest");
+        bodyMap.put("invoke_type", "sm4_encrypt");
+        bodyMap.put("key", sm4Key);
+        bodyMap.put("data", data);
+        String bodyJson = JSON.toJSONString(bodyMap);
+        byte[] bodyByte = new byte[0];
+        byte[] signFactorByte = null;
+        byte[] keyS = null;
+        byte[] hmac = null;
+        String signFactor = null;
+        try {
+            bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+            signFactorByte = securityDigest.genSignFactor();
+            signFactor = Base64.toBase64String(signFactorByte);
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            hmac = securityDigest.hamc(keyS, bodyByte);
+        } catch (EncryptException | HashException e) {
+            e.printStackTrace();
+        }
+        headerMap.put("sign_factor", signFactor);
+        headerMap.put("hmac_value", Base64.toBase64String(hmac));
+        headerMap.put("app_code", appCode);
+        cryptoRequest.setRequestHeader(headerMap);
+        cryptoRequest.setRequestBody(bodyMap);
+        return JSON.toJSONString(cryptoRequest);
+    }
+
+    /**
+     * 构建解密请求消息
+     *
+     * @param appKey
+     * @param appCode
+     * @param sm4Key
+     * @param encryptData
+     * @return
+     */
+    public String buildDecryptRequestMessage(String appKey, String appCode, String sm4Key, byte[] encryptData) {
+        CryptoRequest cryptoRequest = new CryptoRequest();
+        Map headerMap = new HashMap<String, String>();
+        Map bodyMap = new HashMap<String, String>();
+        cryptoRequest.setRequestId("123456");
+        cryptoRequest.setMessageType("cryptoRequest");
+        bodyMap.put("invoke_type", "sm4_decrypt");
+        bodyMap.put("key", sm4Key);
+        bodyMap.put("data", Base64.toBase64String(encryptData));
+        String bodyJson = JSON.toJSONString(bodyMap);
+        byte[] bodyByte = new byte[0];
+        byte[] signFactorByte = null;
+        byte[] keyS = null;
+        byte[] hmac = null;
+        String signFactor = null;
+        try {
+            bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(appKey), null, bodyJson.getBytes());
+            bodyMap.clear();
+            bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
+            signFactorByte = securityDigest.genSignFactor();
+            signFactor = Base64.toBase64String(signFactorByte);
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            hmac = securityDigest.hamc(keyS, bodyByte);
+        } catch (EncryptException | HashException e) {
+            e.printStackTrace();
+        }
         headerMap.put("sign_factor", signFactor);
         headerMap.put("hmac_value", Base64.toBase64String(hmac));
         headerMap.put("app_code", appCode);

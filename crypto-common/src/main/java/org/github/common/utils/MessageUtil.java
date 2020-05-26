@@ -13,35 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.github.bean;
-import com.alibaba.fastjson.annotation.JSONField;
+package org.github.common.utils;
+
+import com.alibaba.fastjson.JSON;
 
 /**
- * appkey请求
- *
  * @author zhangmingyang
- * @Date: 2020/5/8
+ * @Date: 2020/5/26
  * @company Dingxuan
  */
-public class AppKeyRequest {
-    @JSONField(name = "request_id")
-    private int requestId;
-    @JSONField(name = "app_code")
-    private String appName;
+public class MessageUtil {
 
-    public int getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(int requestId) {
-        this.requestId = requestId;
-    }
-
-    public String getAppName() {
-        return appName;
-    }
-
-    public void setAppName(String appName) {
-        this.appName = appName;
+    /**
+     * 解析通用返回消息
+     *
+     * @param json
+     * @return
+     */
+    public String parseCommonResult(String json) {
+        String data = JSON.parseObject(json).getString("data");
+        String result = JSON.parseObject(data).getString("result");
+        return result;
     }
 }
