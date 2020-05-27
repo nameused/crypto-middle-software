@@ -71,21 +71,13 @@ public class RequestHelper {
      * @param appCode         本地应用编码代号appcode
      * @return
      */
-    public String buildAppkeyRequestMessage(String serverPublickey, String appCode) {
-        SecurityDigest securityDigest = new SecurityDigest();
-        //生成appkey
-        byte[] appkey = new byte[0];
-        try {
-            appkey = securityDigest.genAppkey(appCode);
-        } catch (EncryptException e) {
-            e.printStackTrace();
-        }
+    public String buildAppkeyRequestMessage(String serverPublickey,String appKey, String appCode) {
+
         //公钥转换
         byte[] sm2publicKey = Base64.decode(serverPublickey);
-        //本地保存生成的appkey密钥
 
         //利用服务端公钥加密appkey
-        byte[] encryptAppkey = sm2.encrypt(appkey, sm2publicKey);
+        byte[] encryptAppkey = sm2.encrypt(Base64.decode(appKey), sm2publicKey);
         log.info("公钥加密后的值：" + Base64.toBase64String(encryptAppkey));
         //组装appkey请求数据
         Map<String, String> map = new HashMap();
@@ -282,7 +274,7 @@ public class RequestHelper {
         bodyMap.put("invoke_type", "sm2_verify");
         bodyMap.put("sign_value", signValue);
         bodyMap.put("key", publicKey);
-        bodyMap.put("data", data);
+        bodyMap.put("data", Base64.toBase64String(data));
         String bodyJson = JSON.toJSONString(bodyMap);
         byte[] bodyByte = new byte[0];
         byte[] signFactorByte = null;
@@ -295,7 +287,7 @@ public class RequestHelper {
             bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
             signFactorByte = securityDigest.genSignFactor();
             signFactor = Base64.toBase64String(signFactorByte);
-            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
             hmac = securityDigest.hamc(keyS, bodyByte);
         } catch (EncryptException | HashException e) {
             e.printStackTrace();
@@ -325,7 +317,7 @@ public class RequestHelper {
         cryptoRequest.setMessageType("cryptoRequest");
         bodyMap.put("invoke_type", "sm4_encrypt");
         bodyMap.put("key", sm4Key);
-        bodyMap.put("data", data);
+        bodyMap.put("data", Base64.toBase64String(data));
         String bodyJson = JSON.toJSONString(bodyMap);
         byte[] bodyByte = new byte[0];
         byte[] signFactorByte = null;
@@ -338,7 +330,7 @@ public class RequestHelper {
             bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
             signFactorByte = securityDigest.genSignFactor();
             signFactor = Base64.toBase64String(signFactorByte);
-            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
             hmac = securityDigest.hamc(keyS, bodyByte);
         } catch (EncryptException | HashException e) {
             e.printStackTrace();
@@ -381,7 +373,7 @@ public class RequestHelper {
             bodyMap.put("body_encrypt_data", Base64.toBase64String(bodyByte));
             signFactorByte = securityDigest.genSignFactor();
             signFactor = Base64.toBase64String(signFactorByte);
-            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appCode));
+            keyS = securityDigest.genKeyS(signFactorByte, Base64.decode(appKey));
             hmac = securityDigest.hamc(keyS, bodyByte);
         } catch (EncryptException | HashException e) {
             e.printStackTrace();

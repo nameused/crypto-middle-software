@@ -15,7 +15,13 @@
  */
 package org.github.client;
 
+import org.bouncycastle.util.encoders.Base64;
+import org.github.algorithm.factor.SecurityDigest;
+import org.github.bean.AsymmetricKeyPair;
+import org.github.common.exception.EncryptException;
+import org.github.common.utils.MessageUtil;
 import org.github.helper.RequestHelper;
+
 
 /**
  * 密码服务调用统一入口
@@ -46,19 +52,40 @@ public class CspImpl {
      */
     public String getServerPublicKey() {
         String serverPublicKeyRequestMessage = RequestHelper.buildServerPublicKeyRequestMessage();
-        return cryptoClient.send(serverPublicKeyRequestMessage);
+        String result = cryptoClient.send(serverPublicKeyRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
+
+    /**
+     * 生成本地的APPKEY
+     *
+     * @param appCode
+     * @return
+     */
+    public String genAppKey(String appCode) {
+        SecurityDigest securityDigest = new SecurityDigest();
+        //生成appkey
+        byte[] appkey = new byte[0];
+        try {
+            appkey = securityDigest.genAppkey(appCode);
+        } catch (EncryptException e) {
+            e.printStackTrace();
+        }
+        return Base64.toBase64String(appkey);
+    }
+
 
     /**
      * 生成appkey 并发送给
      * 服务端
      *
      * @param serverPublicKey 服务端公钥
+     * @param appKey          本地应用密钥
      * @param appCode         本地应用代码
      * @return
      */
-    public String getAppKey(String serverPublicKey, String appCode) {
-        String appkeyRequestMessage = requestHelper.buildAppkeyRequestMessage(serverPublicKey, appCode);
+    public String sendAppKey(String serverPublicKey, String appKey, String appCode) {
+        String appkeyRequestMessage = requestHelper.buildAppkeyRequestMessage(serverPublicKey, appKey, appCode);
         return cryptoClient.send(appkeyRequestMessage);
     }
 
@@ -72,7 +99,8 @@ public class CspImpl {
      */
     public String hash(String appKey, String appCode, byte[] data) {
         String hashRequestMessage = requestHelper.buildHashRequestMessage(appKey, appCode, data);
-        return cryptoClient.send(hashRequestMessage);
+        String result = cryptoClient.send(hashRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
     /**
@@ -84,7 +112,8 @@ public class CspImpl {
      */
     public String getSymmetryKey(String appKey, String appCode) {
         String symmetryKeyRequestMessage = requestHelper.buildSymmetryKeyRequestMessage(appKey, appCode);
-        return cryptoClient.send(symmetryKeyRequestMessage);
+        String result = cryptoClient.send(symmetryKeyRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
     /**
@@ -94,9 +123,10 @@ public class CspImpl {
      * @param appCode
      * @return
      */
-    public String getAsymmetricKey(String appKey, String appCode) {
+    public AsymmetricKeyPair getAsymmetricKey(String appKey, String appCode) {
         String asymmetricKeyRequestMessage = requestHelper.buildAsymmetricKeyRequestMessage(appKey, appCode);
-        return cryptoClient.send(asymmetricKeyRequestMessage);
+        String message = cryptoClient.send(asymmetricKeyRequestMessage);
+        return MessageUtil.parseAsymmetricKeyPairResult(message);
     }
 
     /**
@@ -110,7 +140,8 @@ public class CspImpl {
      */
     public String sign(String appKey, String appCode, String privateKey, byte[] data) {
         String signRequestMessage = requestHelper.buidSignRequestMessage(appKey, appCode, privateKey, data);
-        return cryptoClient.send(signRequestMessage);
+        String result = cryptoClient.send(signRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
     /**
@@ -126,7 +157,8 @@ public class CspImpl {
 
     public String verfiy(String appKey, String appCode, String publicKey, byte[] data, String signValue) {
         String verifyRequestMessage = requestHelper.buildVerifyRequestMessage(appKey, appCode, publicKey, data, signValue);
-        return cryptoClient.send(verifyRequestMessage);
+        String result = cryptoClient.send(verifyRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
     /**
@@ -140,7 +172,8 @@ public class CspImpl {
      */
     public String encrypt(String appkey, String appCode, String sm4key, byte[] data) {
         String encryptRequestMessage = requestHelper.buildEncryptRequestMessage(appkey, appCode, sm4key, data);
-        return cryptoClient.send(encryptRequestMessage);
+        String result = cryptoClient.send(encryptRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
     /**
@@ -154,7 +187,8 @@ public class CspImpl {
      */
     public String decrypt(String appkey, String appCode, String sm4key, byte[] encryptData) {
         String decryptRequestMessage = requestHelper.buildDecryptRequestMessage(appkey, appCode, sm4key, encryptData);
-        return cryptoClient.send(decryptRequestMessage);
+        String result = cryptoClient.send(decryptRequestMessage);
+        return MessageUtil.parseCommonResult(result);
     }
 
 }

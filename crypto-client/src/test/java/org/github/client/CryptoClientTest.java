@@ -64,7 +64,7 @@ public class CryptoClientTest {
     public void appKeyRequestTest() throws EncryptException {
         SecurityDigest securityDigest = new SecurityDigest();
         //生成appkey
-        byte[] appkey = securityDigest.genAppkey("office2");
+        byte[] appkey = securityDigest.genAppkey("test");
         //公钥转换
         byte[] sm2publicKey = Base64.decode("MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEl4/Gl2rrNqIDEGOXGyf39t2s6Uq00GbKEMgQBJr4z+rqS3v7sLas8kjpUxnK3+0z/81VO1b5SZaZ0eFgeW/71g==");
         //保存生成的appkey密钥
@@ -75,7 +75,7 @@ public class CryptoClientTest {
         //组装appkey请求数据
         Map<String, String> map = new HashMap();
         map.put("message_type", "appKeyRequest");
-        map.put("app_code", "office2");
+        map.put("app_code", "test");
         map.put("app_key", Base64.toBase64String(encryptAppkey));
         String appKeyRequestData = JSON.toJSONString(map);
         System.out.println("发送的数据为：" + appKeyRequestData);

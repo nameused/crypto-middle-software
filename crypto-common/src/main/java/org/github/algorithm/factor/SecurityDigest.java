@@ -86,6 +86,7 @@ public class SecurityDigest extends GmBase {
      * @return
      */
     public byte[] genKeyS(byte[] signFactor, byte[] appKey) throws EncryptException {
+        System.out.println();
         byte[] paddingFactor = new byte[0];
         try {
             paddingFactor = paddingFactor(signFactor);

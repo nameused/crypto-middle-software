@@ -16,6 +16,7 @@
 package org.github.common.utils;
 
 import com.alibaba.fastjson.JSON;
+import org.github.bean.AsymmetricKeyPair;
 
 /**
  * @author zhangmingyang
@@ -30,9 +31,23 @@ public class MessageUtil {
      * @param json
      * @return
      */
-    public String parseCommonResult(String json) {
+    public static String parseCommonResult(String json) {
         String data = JSON.parseObject(json).getString("data");
         String result = JSON.parseObject(data).getString("result");
         return result;
+    }
+
+    /**
+     * 解析非对称密钥消息
+     *
+     * @param json
+     * @return
+     */
+    public static AsymmetricKeyPair parseAsymmetricKeyPairResult(String json) {
+        String data = JSON.parseObject(json).getString("data");
+        String privateKey = JSON.parseObject(data).getString("private_key");
+        String publicKey = JSON.parseObject(data).getString("public_key");
+        AsymmetricKeyPair asymmetricKeyPair = new AsymmetricKeyPair(privateKey, publicKey);
+        return asymmetricKeyPair;
     }
 }

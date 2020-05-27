@@ -41,24 +41,26 @@ public class CryptoClient {
         String strInputstream = "";
         while (true) {
             try {
-                InputStream inputStream = socket.getInputStream();
-                OutputStream outputStream = socket.getOutputStream();
-                DataOutputStream dataOutputStream = null;
-                dataOutputStream = new DataOutputStream(outputStream);
-                //向服务器端发送一条消息
-                dataOutputStream.write(jsonObject.getBytes());
-                dataOutputStream.flush();
-                log.info("传输数据完毕");
-                socket.shutdownOutput();
-                //读取服务器返回的消息
-                DataInputStream dataInputStream = null;
-                dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
-                strInputstream = dataInputStream.readUTF();
-                log.info("服务端返回数据:" + strInputstream);
-                if (strInputstream != null) {
-                    log.info("客户端关闭连接");
-                    Thread.sleep(500);
-                    break;
+                 {
+                    InputStream inputStream = socket.getInputStream();
+                    OutputStream outputStream = socket.getOutputStream();
+                    DataOutputStream dataOutputStream = null;
+                    dataOutputStream = new DataOutputStream(outputStream);
+                    //向服务器端发送一条消息
+                    dataOutputStream.write(jsonObject.getBytes());
+                    dataOutputStream.flush();
+                    log.info("传输数据完毕");
+                    socket.shutdownOutput();
+                    //读取服务器返回的消息
+                    DataInputStream dataInputStream = null;
+                    dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+                    strInputstream = dataInputStream.readUTF();
+                    log.info("服务端返回数据:" + strInputstream);
+                    if (strInputstream != null) {
+                        log.info("客户端关闭连接");
+                        Thread.sleep(500);
+                        break;
+                    }
                 }
             } catch (Exception e) {
                 log.error("客户端异常:" + e.getMessage());

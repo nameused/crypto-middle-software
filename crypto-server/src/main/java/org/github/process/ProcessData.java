@@ -151,7 +151,7 @@ public class ProcessData {
                     byte[] sk = Base64.decode(privateKey);
                     byte[] signValue = null;
                     try {
-                        signValue = sm2.sign(data.getBytes(), sk, "SM3WithSM2");
+                        signValue = sm2.sign(Base64.decode(data), sk, "SM3WithSM2");
                     } catch (SignException e) {
                         cryptoResponse.setCode(500);
                         dataMap.put("error_msg",e.getMessage());
@@ -172,7 +172,7 @@ public class ProcessData {
                     byte[] pk = Base64.decode(publicKey);
                     boolean verify = false;
                     try {
-                        verify = sm2.verify(data.getBytes(), pk, Base64.decode(signature), "SM3WithSM2");
+                        verify = sm2.verify(Base64.decode(data), pk, Base64.decode(signature), "SM3WithSM2");
                         log.info("验证结果:" + verify);
                     } catch (SignException e) {
                         cryptoResponse.setCode(500);
@@ -189,7 +189,7 @@ public class ProcessData {
                 case SM3_HASH:
                     byte[] hashValue = null;
                     try {
-                        hashValue = sm3.hash(data.getBytes());
+                        hashValue = sm3.hash(Base64.decode(data));
                     } catch (HashException e) {
                         cryptoResponse.setCode(500);
                         dataMap.put("error_msg",e.getMessage());
@@ -220,7 +220,7 @@ public class ProcessData {
                     String sm4key = JSON.parseObject(requestBody).getString("key");
                     byte[] encryData = null;
                     try {
-                        encryData = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(sm4key), null, data.getBytes());
+                        encryData = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(sm4key), null, Base64.decode(data));
                     } catch (EncryptException e) {
                         log.error(e.getMessage());
                         cryptoResponse.setCode(500);
