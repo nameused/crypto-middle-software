@@ -9,4 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>crypto-core</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>crypto-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

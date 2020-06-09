@@ -1,0 +1,12 @@
+csp:
+  defaultValue: gm
+  cspProviders:
+    gm:
+      signType: SM3WithSM2
+      encryptType: SM4/ECB/PKCS5Padding
+    gmt0018:
+      signType: SM3WithSM2
+      encryptType: SM4/ECB/PKCS5Padding
+    dsvs:
+      signType: SM3WithSM2
+      encryptType: SM4/ECB/PKCS5Padding
