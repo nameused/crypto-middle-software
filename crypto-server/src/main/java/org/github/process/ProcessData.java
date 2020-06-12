@@ -19,19 +19,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import org.github.algorithm.factor.SecurityDigest;
-import org.github.algorithm.gm.SM2;
-import org.github.algorithm.gm.SM3;
-import org.github.algorithm.gm.SM4;
 import org.github.bean.CryptoRequest;
 import org.github.bean.CryptoResponse;
-import org.github.common.exception.EncryptException;
-import org.github.common.exception.HashException;
-import org.github.common.exception.SignException;
+import org.github.common.exception.CspException;
 import org.github.common.utils.FileUtils;
 import org.apache.log4j.Logger;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 import org.github.config.CryptoConfigFactory;
+import org.github.csp.ICsp;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -61,6 +58,11 @@ public class ProcessData {
     private final static String SM4_DECRYPT = "sm4_decrypt";
     private final static String PUBLICKEY_REQUEST = "publicKeyRequest";
 
+    private ICsp iCsp;
+
+    public ProcessData(ICsp iCsp) {
+        this.iCsp = iCsp;
+    }
 
     /**
      * 根据接收到的消息类型进行解析处理
@@ -68,15 +70,15 @@ public class ProcessData {
      * @param strInputstream
      * @return
      */
-    public static String process(String strInputstream) {
+
+
+    public String process(String strInputstream) {
         String result = null;
         JSONObject jsonObject = JSON.parseObject(strInputstream);
         String messageType = jsonObject.getString("message_type");
         CryptoResponse cryptoResponse = new CryptoResponse();
-        Map<String,String> dataMap=new HashMap<>();
-        SM2 sm2 = new SM2();
-        SM3 sm3 = new SM3();
-        SM4 sm4 = new SM4();
+        Map<String, String> dataMap = new HashMap<>();
+
         CryptoRequest cryptoRequest = new CryptoRequest();
         SecurityDigest securityDigest = new SecurityDigest();
         //加密请求
@@ -90,7 +92,7 @@ public class ProcessData {
             String bodyEncryptData = JSON.parseObject(requestBody).getString("body_encrypt_data");
             if (!FileUtils.findFile(appCode)) {
                 cryptoResponse.setCode(500);
-                dataMap.put("error_msg","非法的数据请求!");
+                dataMap.put("error_msg", "非法的数据请求!");
                 cryptoResponse.setData(dataMap);
                 throw new RuntimeException("非法的数据请求!");
             }
@@ -106,7 +108,7 @@ public class ProcessData {
             }
             if (!verifyResult) {
                 cryptoResponse.setCode(500);
-                dataMap.put("error_msg","数据验证不通过,数据存在被篡改风险!");
+                dataMap.put("error_msg", "数据验证不通过,数据存在被篡改风险!");
                 cryptoResponse.setData(dataMap);
                 log.error("数据验证不通过,数据存在被篡改风险!");
                 result = JSON.toJSONString(cryptoResponse);
@@ -115,10 +117,12 @@ public class ProcessData {
             //通过appkey解析出新的requestBody内容
             byte[] requestBodyContent = null;
             try {
-                requestBodyContent = sm4.decrypt("SM4/ECB/PKCS5Padding", appKey, null, Base64.decode(bodyEncryptData));
-            } catch (EncryptException e) {
+                requestBodyContent = iCsp.sysDecrypt(appKey, Base64.decode(bodyEncryptData), null, "SM4/ECB/PKCS5Padding");
+
+                //.decrypt("SM4/ECB/PKCS5Padding", appKey, null, Base64.decode(bodyEncryptData));
+            } catch (CspException e) {
                 cryptoResponse.setCode(500);
-                dataMap.put("error_msg","数据解密错误!");
+                dataMap.put("error_msg", "数据解密错误!");
                 cryptoResponse.setData(dataMap);
                 log.error("数据解密错误!");
             }
@@ -130,38 +134,40 @@ public class ProcessData {
             requestBody = JSON.parseObject(requestBodyJson).getString("request_body");
             String invokeType = JSON.parseObject(requestBody).getString("invoke_type");
             String data = JSON.parseObject(requestBody).getString("data");
+            log.info("data值:"+data);
             switch (invokeType) {
                 case SM2_KEYPAIR_GEN:
-                    KeyPair keyPair=null;
+                    KeyPair keyPair = null;
                     try {
-                        keyPair =sm2.genKeyPair();
-                    } catch ( SignException e) {
+                        keyPair = iCsp.genKeyPair();
+                    } catch (CspException e) {
                         log.error(e.getMessage());
                     }
-                    String sm2PrivateKey=Base64.toBase64String(keyPair.getPrivate().getEncoded());
-                    String sm2PublicKey=Base64.toBase64String(keyPair.getPublic().getEncoded());
+                    String sm2PrivateKey = Base64.toBase64String(keyPair.getPrivate().getEncoded());
+                    String sm2PublicKey = Base64.toBase64String(keyPair.getPublic().getEncoded());
                     cryptoResponse.setCode(200);
-                    dataMap.put("private_key",sm2PrivateKey);
-                    dataMap.put("public_key",sm2PublicKey);
+                    dataMap.put("private_key", sm2PrivateKey);
+                    dataMap.put("public_key", sm2PublicKey);
                     cryptoResponse.setData(dataMap);
-                    result=JSON.toJSONString(cryptoResponse);
+                    result = JSON.toJSONString(cryptoResponse);
                     break;
                 case SM2_SIGN:
                     String privateKey = JSON.parseObject(requestBody).getString("key");
                     byte[] sk = Base64.decode(privateKey);
                     byte[] signValue = null;
                     try {
-                        signValue = sm2.sign(Base64.decode(data), sk, "SM3WithSM2");
-                    } catch (SignException e) {
+                        signValue = iCsp.sign(sk, Base64.decode(data));
+                        //sign(Base64.decode(data), sk, "SM3WithSM2");
+                    } catch (CspException e) {
                         cryptoResponse.setCode(500);
-                        dataMap.put("error_msg",e.getMessage());
+                        dataMap.put("error_msg", e.getMessage());
                         cryptoResponse.setData(dataMap);
                     }
                     log.info("签名值:" + Hex.toHexString(signValue));
                     String sign = Base64.toBase64String(signValue);
                     log.info("签名值的base64字符串:" + sign);
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",sign);
+                    dataMap.put("result", sign);
                     cryptoResponse.setData(dataMap);
                     result = JSON.toJSONString(cryptoResponse);
                     break;
@@ -172,16 +178,17 @@ public class ProcessData {
                     byte[] pk = Base64.decode(publicKey);
                     boolean verify = false;
                     try {
-                        verify = sm2.verify(Base64.decode(data), pk, Base64.decode(signature), "SM3WithSM2");
+                        verify = iCsp.verify(pk, Base64.decode(data), Base64.decode(signature));
+                        //.verify(Base64.decode(data), pk, Base64.decode(signature), "SM3WithSM2");
                         log.info("验证结果:" + verify);
-                    } catch (SignException e) {
+                    } catch (CspException e) {
                         cryptoResponse.setCode(500);
-                        dataMap.put("error_msg",e.getMessage());
+                        dataMap.put("error_msg", e.getMessage());
                         cryptoResponse.setData(dataMap);
                     }
                     log.info("验证结果:" + verify);
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",String.valueOf(verify));
+                    dataMap.put("result", String.valueOf(verify));
                     cryptoResponse.setData(dataMap);
                     result = JSON.toJSONString(cryptoResponse);
                     break;
@@ -189,46 +196,47 @@ public class ProcessData {
                 case SM3_HASH:
                     byte[] hashValue = null;
                     try {
-                        hashValue = sm3.hash(Base64.decode(data));
-                    } catch (HashException e) {
+                        hashValue = iCsp.hash(Base64.decode(data));
+                    } catch (CspException e) {
                         cryptoResponse.setCode(500);
-                        dataMap.put("error_msg",e.getMessage());
+                        dataMap.put("error_msg", e.getMessage());
                         cryptoResponse.setData(dataMap);
                     }
                     String hashData = Base64.toBase64String(hashValue);
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",hashData);
+                    dataMap.put("result", hashData);
                     cryptoResponse.setData(dataMap);
                     result = JSON.toJSONString(cryptoResponse);
                     break;
 
                 case SM4_KEY_GEN:
-                    byte[] genSM4key=null;
+                    byte[] genSM4key = null;
                     try {
-                        genSM4key=sm4.genKey();
-                    } catch (EncryptException e) {
+                        genSM4key = iCsp.genKey();
+                    } catch (CspException e) {
                         log.error(e.getMessage());
                     }
-                    String sm4keyData=Base64.toBase64String(genSM4key);
+                    String sm4keyData = Base64.toBase64String(genSM4key);
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",sm4keyData);
+                    dataMap.put("result", sm4keyData);
                     cryptoResponse.setData(dataMap);
-                    result=JSON.toJSONString(cryptoResponse);
+                    result = JSON.toJSONString(cryptoResponse);
                     break;
 
                 case SM4_ENCRYPT:
                     String sm4key = JSON.parseObject(requestBody).getString("key");
                     byte[] encryData = null;
                     try {
-                        encryData = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(sm4key), null, Base64.decode(data));
-                    } catch (EncryptException e) {
+                        encryData = iCsp.sysEncrypt(Base64.decode(sm4key), Base64.decode(data), null, "SM4/ECB/PKCS5Padding");
+                        // sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode(sm4key), null, Base64.decode(data));
+                    } catch (CspException e) {
                         log.error(e.getMessage());
                         cryptoResponse.setCode(500);
-                        dataMap.put("error_msg",e.getMessage());
+                        dataMap.put("error_msg", e.getMessage());
                         cryptoResponse.setData(dataMap);
                     }
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",Base64.toBase64String(encryData));
+                    dataMap.put("result", Base64.toBase64String(encryData));
                     cryptoResponse.setData(dataMap);
                     result = JSON.toJSONString(cryptoResponse);
                     break;
@@ -236,15 +244,16 @@ public class ProcessData {
                     String key = JSON.parseObject(requestBody).getString("key");
                     byte[] originalText = null;
                     try {
-                        originalText = sm4.decrypt("SM4/ECB/PKCS5Padding", Base64.decode(key), null, Base64.decode(data));
-                    } catch (EncryptException e) {
+                        originalText = iCsp.sysDecrypt(Base64.decode(key), Base64.decode(data), null, "SM4/ECB/PKCS5Padding");
+                        //decrypt("SM4/ECB/PKCS5Padding", Base64.decode(key), null, Base64.decode(data));
+                    } catch (CspException e) {
                         log.error(e.getMessage());
                         cryptoResponse.setCode(500);
-                        dataMap.put("error_msg",e.getMessage());
+                        dataMap.put("error_msg", e.getMessage());
                         cryptoResponse.setData(dataMap);
                     }
                     cryptoResponse.setCode(200);
-                    dataMap.put("result",new String(originalText));
+                    dataMap.put("result", new String(originalText));
                     cryptoResponse.setData(dataMap);
                     result = JSON.toJSONString(cryptoResponse);
                     break;
@@ -257,7 +266,7 @@ public class ProcessData {
         else if (PUBLICKEY_REQUEST.equals(messageType)) {
             String serverPublickey = CryptoConfigFactory.getCryptoConfig().getServer().get("publicKey");
             cryptoResponse.setCode(200);
-            dataMap.put("result",serverPublickey);
+            dataMap.put("result", serverPublickey);
             cryptoResponse.setData(dataMap);
             result = JSON.toJSONString(cryptoResponse);
         } else if (APPKEY_REQUEST.equals(messageType)) {
@@ -265,7 +274,13 @@ public class ProcessData {
             String appKeyPath = CryptoConfigFactory.getCryptoConfig().getClient().get("appKeyPath");
             String appCode = jsonObject.getString("app_code");
             String encryptAppkey = jsonObject.getString("app_key");
-            byte[] appkey = sm2.decrypt(Base64.decode(encryptAppkey), Base64.decode(serverPrivateKey));
+            byte[] appkey = new byte[0];
+            try {
+                appkey = iCsp.asyDecrypt(Base64.decode(serverPrivateKey), Base64.decode(encryptAppkey));
+            } catch (CspException e) {
+                log.error(e.getMessage());
+            }
+            //.decrypt(Base64.decode(encryptAppkey), Base64.decode(serverPrivateKey));
             if (!new File(appKeyPath).exists()) {
                 try {
                     Files.createDirectories(Paths.get(appKeyPath));
@@ -279,7 +294,7 @@ public class ProcessData {
                 log.error(e.getMessage());
             }
             cryptoResponse.setCode(200);
-            dataMap.put("success_msg","appkey写入到服务端成功!");
+            dataMap.put("success_msg", "appkey写入到服务端成功!");
             cryptoResponse.setData(dataMap);
             result = JSON.toJSONString(cryptoResponse);
         }

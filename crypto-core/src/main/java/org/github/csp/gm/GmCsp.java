@@ -44,6 +44,15 @@ public class GmCsp implements ICsp {
     }
 
     @Override
+    public byte[] genKey() throws CspException {
+        try {
+            return new SM4().genKey();
+        } catch (EncryptException e) {
+            throw new CspException(e.getMessage());
+        }
+    }
+
+    @Override
     public String genRandom(int length) throws CspException {
         return null;
     }

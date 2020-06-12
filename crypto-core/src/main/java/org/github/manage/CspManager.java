@@ -16,6 +16,8 @@
 package org.github.manage;
 
 import org.apache.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
+import org.github.common.exception.CspException;
 import org.github.csp.ICsp;
 import org.github.csp.gm.GmCspFactory;
 import org.github.factory.ICspFactory;
@@ -111,11 +113,15 @@ public class CspManager {
 
 
     public static void initCspFactories() {
-        List<String> providerList=new ArrayList<>();
-        providerList.set(0,"gm");
-        providerList.set(1,"dsvs");
-        initCspFactories(providerList,"gm");
+        List<String> providerList = new ArrayList<>();
+        providerList.add("gm");
+        initCspFactories(providerList, "gm");
     }
 
+
+    public static void main(String[] args) throws CspException {
+        ICsp iCsp = CspManager.getDefaultCsp();
+        System.out.println(Hex.toHexString(iCsp.hash("123".getBytes())));
+    }
 
 }

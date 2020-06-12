@@ -17,5 +17,11 @@
             <artifactId>crypto-common</artifactId>
             <version>0.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>${parent.groupId}</groupId>
+            <artifactId>crypto-core</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>
 </project>

@@ -15,6 +15,8 @@
  */
 package org.github.server;
 
+import org.github.csp.ICsp;
+import org.github.manage.CspManager;
 import org.github.process.ProcessData;
 import org.apache.log4j.Logger;
 
@@ -30,9 +32,11 @@ public class ServerHandler implements Runnable {
     private static final Logger log = Logger.getLogger(ServerHandler.class);
 
     private Socket socket;
+    private  ICsp iCsp;
 
     public ServerHandler(Socket client) {
-        socket = client;
+        this.socket = client;
+        this.iCsp= CspManager.getDefaultCsp();
         new Thread(this).start();
     }
 
@@ -52,12 +56,12 @@ public class ServerHandler implements Runnable {
             }
             //获取客户端发送数据
             strInputstream = new String(baos.toByteArray());
-            log.info("接收到客户端数据:"+strInputstream);
+            log.info("接收到客户端数据:" + strInputstream);
             socket.shutdownInput();
             baos.close();
 
             //处理数据并写入
-            String result = ProcessData.process(strInputstream);
+            String result = new ProcessData(iCsp).process(strInputstream);
             outputStream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             outputStream.writeUTF(result);
             outputStream.flush();

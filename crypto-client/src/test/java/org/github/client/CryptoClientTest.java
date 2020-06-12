@@ -91,7 +91,7 @@ public class CryptoClientTest {
         cryptoRequest.setRequestId("123456");
         cryptoRequest.setMessageType("cryptoRequest");
         bodyMap.put("invoke_type", "sm3_hash");
-        bodyMap.put("data", "fjikwer");
+        bodyMap.put("data", Base64.toBase64String("234324".getBytes()));
         String bodyJson = JSON.toJSONString(bodyMap);
         //先使用appkey加密数据
         byte[] bodyByte = sm4.encrypt("SM4/ECB/PKCS5Padding", Base64.decode("joW9/ON9n+Mc3rv4b3yS0Q=="), null, bodyJson.getBytes());

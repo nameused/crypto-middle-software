@@ -37,6 +37,14 @@ public interface ICsp {
 
 
     /**
+     * 生成对称密钥
+     *
+     * @return
+     * @throws CspException
+     */
+    byte[] genKey() throws CspException;
+
+    /**
      * 生产随机数
      *
      * @param length
